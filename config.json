@@ -1,0 +1,18 @@
+{
+    "dataset" : {
+        "root_path":  "./data/CNR-EXT_FULL_IMAGE_1000x750",
+        "images_dir": "/FULL_IMAGE_1000x750",
+        "params": {
+            "camera_ids": [1],
+            "weather":    ["OVERCAST"]
+        }
+    },
+
+    "model" : {
+        "repository":   "ultralytics/yolov5",
+        "name":         "yolov5x",
+        "classes":      [2, 5, 7],
+        "pretrained":   1
+    }
+
+}
