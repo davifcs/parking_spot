@@ -1,16 +1,21 @@
 {
+    "batch_size":   1,
+    "num_workers":  0,
+
     "dataset" : {
-        "root_path":  "./data/CNR-EXT_FULL_IMAGE_1000x750",
-        "images_dir": "/FULL_IMAGE_1000x750",
+        "root_path":    "./data/CNR-EXT_FULL_IMAGE_1000x750",
+        "images_dir":   "/FULL_IMAGE_1000x750",
         "params": {
-            "camera_ids": [1],
-            "weather":    ["OVERCAST"]
+            "camera_ids": [2,3],
+            "weather":    ["OVERCAST"],
+            "label_image_size":   [2592,1944],
+            "image_size":   [1000,750]
         }
     },
 
     "model" : {
         "repository":   "ultralytics/yolov5",
-        "name":         "yolov5x",
+        "name":         "yolov5s",
         "classes":      [2, 5, 7],
         "pretrained":   1
     }

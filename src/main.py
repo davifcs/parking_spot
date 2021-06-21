@@ -1,9 +1,11 @@
 import argparse
 import json
 
-from dataset import DatasetAssemble
+import torch
+
+from dataset import CNRExtDataset
 from model import ParkingSpotClassifier
-from src.utils import compute_iou
+import src.utils as utils
 
 
 arg_parser = argparse.ArgumentParser(description='Run inference with pre-trained network and evaluate')
@@ -19,20 +21,25 @@ def main(config_path):
     with open(config_path) as config_buffer:
         config = json.loads(config_buffer.read())
 
-    dataset = DatasetAssemble(labels_path=config['dataset']['root_path'],
-                              images_path=config['dataset']['root_path']+config['dataset']['images_dir'],
-                              weather=config['dataset']['params']['weather'],
-                              camera_ids=config['dataset']['params']['camera_ids'])
+    dataset = CNRExtDataset(targets_dir=config['dataset']['root_path'],
+                            images_dir=config['dataset']['root_path']+config['dataset']['images_dir'],
+                            weather=config['dataset']['params']['weather'],
+                            camera_ids=config['dataset']['params']['camera_ids'],
+                            label_image_size=config['dataset']['params']['label_image_size'],
+                            image_size=config['dataset']['params']['image_size'])
 
-    model_ = ParkingSpotClassifier(repository=config['model']['repository'], name=config['model']['name'],
-                                   classes=config['model']['classes'], pretrained=config['model']['pretrained'])
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=config['batch_size'], num_workers=config['num_workers'],
+                                 shuffle=False)
 
-    results = model_.inference(dataset.images_list[:10])
-    dataset_xywh = dataset.labels_df[['X', 'Y', 'W', 'H']].values
-    iou = compute_iou(results.xywh, dataset_xywh)
-    print(iou)
+    model = torch.hub.load(repo_or_dir=config['model']['repository'], model=config['model']['name'],
+                           pretrained=config['model']['pretrained'])
+    model.classes = config['model']['classes']
 
+    model.eval()
+    for images, targets in dataloader:
 
+        outputs = model(images)
+        print(outputs)
 
 if __name__ == '__main__':
     _args = arg_parser.parse_args()
