@@ -44,7 +44,7 @@ class CNRExtDataloader():
         for i in indices:
             batch.append(i)
             if len(batch) == self.batch_size:
-                yield self.images_paths[batch].tolist(), self.targets[batch]
+                yield self.images_paths[batch].tolist(), self.targets[batch].tolist()
                 batch = []
 
     def __parse_bounding_boxes_csv(self):

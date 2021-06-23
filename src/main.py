@@ -4,7 +4,6 @@ import json
 import torch
 
 from dataset import CNRExtDataloader
-from model import ParkingSpotClassifier
 import src.utils as utils
 
 
@@ -37,7 +36,9 @@ def main(config_path):
     for images, targets in dataloader:
         images_paths = images[:]
         results = model(images)
-        utils.display_detected_and_target(images_paths, results.xyxy, targets)
+        n_detections = utils.detection(results.xyxy, targets)
+        utils.display_targets_and_detections(images_paths, results.xyxy, targets, n_detections)
+
 
 if __name__ == '__main__':
     _args = arg_parser.parse_args()
