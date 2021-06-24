@@ -1,15 +1,17 @@
 {
-    "batch_size":   1,
-    "num_workers":  0,
+    "mode":         "detection",
+    "task":         "evaluate",
+    "batch_size":   32,
 
     "dataset" : {
         "root_path":    "./data/CNR-EXT_FULL_IMAGE_1000x750",
         "images_dir":   "/FULL_IMAGE_1000x750",
         "params": {
-            "camera_ids": [2,3],
-            "weather":    ["OVERCAST"],
-            "label_image_size":   [2592,1944],
-            "image_size":   [1000,750]
+            "camera_ids":           [1, 2, 3, 4, 5, 6, 7, 8, 9],
+            "n_clusters":           [35, 9, 21, 37, 46, 44, 46, 54, 28],
+            "weather":              ["OVERCAST", "RAINY", "SUNNY"],
+            "label_image_size":     [2592,1944],
+            "image_size":           [1000,750]
         }
     },
 
