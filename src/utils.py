@@ -5,14 +5,9 @@ from PIL import Image, ImageDraw, ImageFont
 from sklearn.cluster import KMeans
 
 
-# TODO Needs refactor
-def k_means_clusters(detected, n_clusters):
-    detected_xy = []
-    for d in detected:
-        detected_xy.extend(d[:, :2].cpu().tolist())
-    kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(detected_xy)
+def k_means_clusters(xy, n_clusters):
+    kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(xy)
     return kmeans.cluster_centers_
-
 
 def detections(detected, target):
     n_detections = []
@@ -37,7 +32,8 @@ def display_targets_and_detections(image_path, detected, target, n_detections):
     for p, d, t, n in zip(image_path, detected, target, n_detections):
         image = Image.open(p).convert('RGB')
         draw = ImageDraw.Draw(image)
-        output_path = os.path.abspath('.') + '/results/' + os.path.basename(os.path.split(p)[0]) + '/' + os.path.basename(p)
+        output_path = os.path.abspath('.') + '/results/evaluate/' + \
+                      os.path.basename(os.path.split(p)[0]) + '/' + os.path.basename(p)
         for d_bbox in d:
             draw.rectangle(d_bbox[:4].cpu().detach().numpy(), outline='red', width=2)
             draw.line(d_bbox.cpu().detach().numpy()[:4], fill='red', width=2)

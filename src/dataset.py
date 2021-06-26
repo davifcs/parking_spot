@@ -8,6 +8,7 @@ import numpy as np
 class CNRExtDataloader():
     def __init__(self,
                  targets_dir: str = '',
+                 targets_origin: str = '',
                  images_dir: str = '',
                  weather: list = [],
                  camera_ids: list = [],
@@ -28,7 +29,7 @@ class CNRExtDataloader():
         self.image_size = image_size
         self.label_image_size = label_image_size
 
-        self.__parse_bounding_boxes_csv()
+        self.__parse_bounding_boxes_csv(targets_origin)
         self.__load_images_path(images_dir, weather, camera_ids)
         self.__image_target_pair()
 
@@ -47,21 +48,27 @@ class CNRExtDataloader():
                 yield self.images_paths[batch].tolist(), self.targets[batch].tolist()
                 batch = []
 
-    def __parse_bounding_boxes_csv(self):
-        for f in self.targets_paths:
-            targets_df = pd.read_csv(f)
-            targets_df[['X', 'W']] = targets_df[['X', 'W']] * self.image_size[0] / self.label_image_size[0]
-            targets_df[['Y', 'H']] = targets_df[['Y', 'H']] * self.image_size[1] / self.label_image_size[1]
+    def __parse_bounding_boxes_csv(self, targets_origin):
+        if targets_origin == "cnrext":
+            for f in self.targets_paths:
+                targets_df = pd.read_csv(f)
+                targets_df[['X', 'W']] = targets_df[['X', 'W']] * self.image_size[0] / self.label_image_size[0]
+                targets_df[['Y', 'H']] = targets_df[['Y', 'H']] * self.image_size[1] / self.label_image_size[1]
 
-            targets_df['X1'] = targets_df['X']
-            targets_df['Y1'] = targets_df['Y']
-            targets_df['X2'] = targets_df['X'] + targets_df['W']
-            targets_df['Y2'] = targets_df['Y'] + targets_df['H']
+                targets_df['X1'] = targets_df['X']
+                targets_df['Y1'] = targets_df['Y']
+                targets_df['X2'] = targets_df['X'] + targets_df['W']
+                targets_df['Y2'] = targets_df['Y'] + targets_df['H']
 
-            targets_df[['camera']] = int(os.path.splitext(f)[0][-1])
+                targets_df[['camera']] = int(os.path.splitext(f)[0][-1])
 
-            self.target_dict[int(os.path.splitext(f)[0][-1])] = \
-                targets_df[['X1', 'Y1', 'X2', 'Y2', 'SlotId', 'camera']].values
+                self.target_dict[int(os.path.splitext(f)[0][-1])] = \
+                    targets_df[['X1', 'Y1', 'X2', 'Y2', 'camera']].values
+
+        elif targets_origin == "own":
+            for f in self.targets_paths:
+                targets_df = pd.read_csv(f)
+                self.target_dict[int(os.path.splitext(f)[0][-1])] = targets_df.values
 
     def __load_images_path(self, images_dir, weather, camera_ids):
         for w in weather:
