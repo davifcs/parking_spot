@@ -4,6 +4,8 @@ import glob
 import pandas as pd
 import numpy as np
 
+from torch.utils.data import Dataset
+
 
 class CNRExtDataloader():
     def __init__(self,
@@ -14,7 +16,7 @@ class CNRExtDataloader():
                  camera_ids: list = [],
                  image_size: list = [],
                  label_image_size: list = [],
-                 batch_size: int = 5,
+                 batch_size: int = 32,
                  shuffle: bool = False
                  ):
 
@@ -80,3 +82,22 @@ class CNRExtDataloader():
         for path in self.images_paths:
             self.targets.append(self.target_dict[int(os.path.basename(os.path.dirname(path))[-1:])])
         self.targets = np.array(self.targets)
+
+
+class CNRExtPatchesDataset(Dataset):
+    def __init__(self, path, cameras_ids, transform):
+        dataframe = pd.read_csv(path, delimiter=' ', names=['path', 'label'])
+        dataframe['camera_id'] = dataframe['path'].apply(lambda x: int(os.path.basename(os.path.dirname(x))[-1:]))
+        self.images_path = dataframe.loc[dataframe['camera_id'].isin(cameras_ids), 'path'].values
+        self.labels = dataframe.loc[dataframe['camera_id'].isin(cameras_ids), 'label'].values
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        label = self.labels[idx].astype(np.int64)
+        images_path = self.images_path[idx]
+        image = self.transform(images_path)
+
+        return image, label

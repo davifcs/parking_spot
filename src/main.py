@@ -1,20 +1,23 @@
 import argparse
 import json
 
-import torch
 import numpy as np
 import pandas as pd
 
-from dataset import CNRExtDataloader
-import src.utils as utils
+import torch
+from torch.utils.data import DataLoader
+from torchvision import transforms
+from pytorch_lightning import Trainer
 
+from dataset import CNRExtDataloader, CNRExtPatchesDataset
+from model import SlotOccupancyClassifier
+import src.utils as utils
 
 arg_parser = argparse.ArgumentParser(description='Run inference with pre-trained network and evaluate')
 
 arg_parser.add_argument(
     '-c',
     '--conf',
-    default='config.json',
     help='path to configuration file')
 
 
@@ -22,11 +25,11 @@ def main(config_path):
     with open(config_path) as config_buffer:
         config = json.loads(config_buffer.read())
 
+    if config['mode'] == 'slot_position':
         config_camera_ids = config['dataset']['params']['camera_ids']
         config_slots = config['dataset']['params']['slots']
         gen_target_wh = config['dataset']['params']['gen_target_wh']
 
-    if config['mode'] == 'detection':
         dataloader = CNRExtDataloader(targets_dir=config['dataset']['targets_dir'],
                                 images_dir=config['dataset']['images_dir'],
                                 targets_origin=config['targets_origin'],
@@ -85,6 +88,34 @@ def main(config_path):
                                                  [conf_c] * len(clusters_xy)]).T
                 pd.DataFrame(clusters_xyxy_camera).to_csv("./results/generate/camera" + str(conf_c) + ".csv",
                                                           index=False)
+    elif config['mode'] == 'slot_occupancy':
+        transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize(config['model']['input_size']),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=config['model']['normalize']['mean'], std=config['model']['normalize']['std'])
+        ])
+
+        dataset_train = CNRExtPatchesDataset(path=config['dataset']['path'],
+                                             cameras_ids=config['train']['camera_ids'],
+                                             transform=transform)
+        dataset_test = CNRExtPatchesDataset(path=config['dataset']['path'],
+                                            cameras_ids=config['test']['camera_ids'],
+                                            transform=transform)
+
+        train_size = int(len(dataset_train) * (1 - config['train']['val_size']))
+        val_size = len(dataset_train) - train_size
+        dataset_train, dataset_val = torch.utils.data.random_split(dataset_train, [train_size, val_size])
+
+        dataloader_train = DataLoader(dataset=dataset_train, batch_size=config['train']['batch_size'], shuffle=True)
+        dataloader_val = DataLoader(dataset=dataset_val, batch_size=config['train']['batch_size'], shuffle=False)
+        dataloader_test = DataLoader(dataset=dataset_test, shuffle=False)
+
+        pl_model = SlotOccupancyClassifier(pretrained=config['model']['pretrained'],
+                                           learning_rate=config['model']['learning_rate'])
+        trainer = Trainer(gpus=config['gpus'], max_epochs=config['epochs'])
+        trainer.fit(model=pl_model, train_dataloader=dataloader_train, val_dataloaders=dataloader_val)
+        trainer.test(pl_model, dataloader_test)
 
 
 if __name__ == '__main__':
