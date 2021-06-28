@@ -3,9 +3,8 @@ import glob
 
 import pandas as pd
 import numpy as np
-
 from torch.utils.data import Dataset
-
+from PIL import Image
 
 class CNRExtDataloader():
     def __init__(self,
@@ -85,10 +84,11 @@ class CNRExtDataloader():
 
 
 class CNRExtPatchesDataset(Dataset):
-    def __init__(self, path, cameras_ids, transform):
-        dataframe = pd.read_csv(path, delimiter=' ', names=['path', 'label'])
+    def __init__(self, images_dir, labels_dir, cameras_ids, transform):
+        dataframe = pd.read_csv(labels_dir, delimiter=' ', names=['path', 'label'])
         dataframe['camera_id'] = dataframe['path'].apply(lambda x: int(os.path.basename(os.path.dirname(x))[-1:]))
-        self.images_path = dataframe.loc[dataframe['camera_id'].isin(cameras_ids), 'path'].values
+        self.images_path = [images_dir + path
+                            for path in dataframe.loc[dataframe['camera_id'].isin(cameras_ids), 'path'].values]
         self.labels = dataframe.loc[dataframe['camera_id'].isin(cameras_ids), 'label'].values
         self.transform = transform
 
@@ -97,7 +97,7 @@ class CNRExtPatchesDataset(Dataset):
 
     def __getitem__(self, idx):
         label = self.labels[idx].astype(np.int64)
-        images_path = self.images_path[idx]
-        image = self.transform(images_path)
+        image = Image.open(self.images_path[idx])
+        image = self.transform(image)
 
         return image, label

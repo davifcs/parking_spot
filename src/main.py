@@ -8,6 +8,7 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 from dataset import CNRExtDataloader, CNRExtPatchesDataset
 from model import SlotOccupancyClassifier
@@ -89,17 +90,25 @@ def main(config_path):
                 pd.DataFrame(clusters_xyxy_camera).to_csv("./results/generate/camera" + str(conf_c) + ".csv",
                                                           index=False)
     elif config['mode'] == 'slot_occupancy':
+        input_size = config['model']['input_size']
         transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize(config['model']['input_size']),
+            transforms.Resize((input_size, input_size)),
             transforms.ToTensor(),
             transforms.Normalize(mean=config['model']['normalize']['mean'], std=config['model']['normalize']['std'])
         ])
 
-        dataset_train = CNRExtPatchesDataset(path=config['dataset']['path'],
+        checkpoint_callback = ModelCheckpoint(
+            monitor='val_loss',
+            dirpath=config['train']['checkpoint_path'],
+            filename="{epoch:02d}-{val_loss:.2f}",
+        )
+
+        dataset_train = CNRExtPatchesDataset(images_dir=config['dataset']['images_dir'],
+                                             labels_dir=config['dataset']['labels_dir'],
                                              cameras_ids=config['train']['camera_ids'],
                                              transform=transform)
-        dataset_test = CNRExtPatchesDataset(path=config['dataset']['path'],
+        dataset_test = CNRExtPatchesDataset(images_dir=config['dataset']['images_dir'],
+                                            labels_dir=config['dataset']['labels_dir'],
                                             cameras_ids=config['test']['camera_ids'],
                                             transform=transform)
 
@@ -107,14 +116,19 @@ def main(config_path):
         val_size = len(dataset_train) - train_size
         dataset_train, dataset_val = torch.utils.data.random_split(dataset_train, [train_size, val_size])
 
-        dataloader_train = DataLoader(dataset=dataset_train, batch_size=config['train']['batch_size'], shuffle=True)
-        dataloader_val = DataLoader(dataset=dataset_val, batch_size=config['train']['batch_size'], shuffle=False)
-        dataloader_test = DataLoader(dataset=dataset_test, shuffle=False)
+        dataloader_train = DataLoader(dataset=dataset_train, batch_size=config['train']['batch_size'], shuffle=True,
+                                      num_workers=config['num_workers'], drop_last=True)
+        dataloader_val = DataLoader(dataset=dataset_val, batch_size=config['train']['batch_size'], shuffle=False,
+                                    num_workers=config['num_workers'], drop_last=True)
+        dataloader_test = DataLoader(dataset=dataset_test, shuffle=False, num_workers=config['num_workers'])
 
-        pl_model = SlotOccupancyClassifier(pretrained=config['model']['pretrained'],
+        pl_model = SlotOccupancyClassifier(model_repo=config['model']['repository'], model_name=config['model']['name'],
+                                           pretrained=config['model']['pretrained'],
                                            learning_rate=config['model']['learning_rate'])
-        trainer = Trainer(gpus=config['gpus'], max_epochs=config['epochs'])
+        trainer = Trainer(gpus=config['gpus'], max_epochs=config['epochs'], callbacks=[checkpoint_callback])
         trainer.fit(model=pl_model, train_dataloader=dataloader_train, val_dataloaders=dataloader_val)
+    
+        pl_model = SlotOccupancyClassifier.load_from_checkpoint(checkpoint_path=checkpoint_callback.best_model_path)
         trainer.test(pl_model, dataloader_test)
 
 
