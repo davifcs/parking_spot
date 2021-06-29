@@ -1,11 +1,11 @@
 {
-    "mode":         "slot_position",
-    "task":         "evaluate",
-    "batch_size":   32,
-    "targets_origin": "own",
+    "mode":             "slot_position",
+    "task":             "evaluate",
+    "batch_size":       32,
+    "targets_origin":   "own",
 
     "dataset" : {
-        "targets_dir":    "./results/generate",
+        "targets_dir":  "./results/generate",
         "images_dir":   "./data/CNR-EXT_FULL_IMAGE_1000x750/FULL_IMAGE_1000x750",
         "params": {
             "camera_ids":           [1, 2, 3, 4, 5, 6, 7, 8, 9],

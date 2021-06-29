@@ -2,7 +2,7 @@
     "mode":         "slot_occupancy",
     "task":         "train",
     "num_workers":  8,
-    "epochs":       5,
+    "epochs":       3,
     "gpus":         1,
 
     "dataset" : {
@@ -14,7 +14,7 @@
         "camera_ids":       [1, 2, 3, 4, 5],
         "batch_size":       24,
         "val_size":         0.3,
-        "checkpoint_path":  "./trained_models/"
+        "checkpoint_path":  "trained_models/"
     },
 
     "test": {
@@ -25,7 +25,7 @@
         "repository":       "huawei-noah/ghostnet",
         "name":             "ghostnet_1x",
         "pretrained":       1,
-        "learning_rate":    1e-4,
+        "learning_rate":    1e-3,
         "input_size":       224,
         "normalize": {
             "mean": [0.485, 0.456, 0.406],

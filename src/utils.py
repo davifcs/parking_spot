@@ -1,5 +1,6 @@
 import os
 
+import torch
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from sklearn.cluster import KMeans
@@ -8,6 +9,7 @@ from sklearn.cluster import KMeans
 def k_means_clusters(xy, n_clusters):
     kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(xy)
     return kmeans.cluster_centers_
+
 
 def detections(detected, target):
     n_detections = []
@@ -44,3 +46,12 @@ def display_targets_and_detections(image_path, detected, target, n_detections):
         font = ImageFont.truetype("arial.ttf", 32)
         draw.text((0, 0), str(n) + '/' + str(len(t)), (255, 0, 0), font=font)
         image.save(output_path)
+
+
+def crop_and_append(image_path, slot_positions, transform):
+    slot_crops = []
+    image = Image.open(image_path)
+    for xyxy in slot_positions:
+        crop = image.crop((xyxy[0], xyxy[1], xyxy[2], xyxy[3]))
+        slot_crops.append(transform(crop))
+    return torch.stack(slot_crops)

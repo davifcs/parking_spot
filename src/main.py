@@ -96,13 +96,12 @@ def main(config_path):
             transforms.ToTensor(),
             transforms.Normalize(mean=config['model']['normalize']['mean'], std=config['model']['normalize']['std'])
         ])
-
         checkpoint_callback = ModelCheckpoint(
             monitor='val_loss',
             dirpath=config['train']['checkpoint_path'],
             filename="{epoch:02d}-{val_loss:.2f}",
+            mode='min',
         )
-
         dataset_train = CNRExtPatchesDataset(images_dir=config['dataset']['images_dir'],
                                              labels_dir=config['dataset']['labels_dir'],
                                              cameras_ids=config['train']['camera_ids'],
@@ -126,10 +125,46 @@ def main(config_path):
                                            pretrained=config['model']['pretrained'],
                                            learning_rate=config['model']['learning_rate'])
         trainer = Trainer(gpus=config['gpus'], max_epochs=config['epochs'], callbacks=[checkpoint_callback])
-        trainer.fit(model=pl_model, train_dataloader=dataloader_train, val_dataloaders=dataloader_val)
-    
-        pl_model = SlotOccupancyClassifier.load_from_checkpoint(checkpoint_path=checkpoint_callback.best_model_path)
-        trainer.test(pl_model, dataloader_test)
+
+        if config['task'] == 'train':
+            trainer.fit(model=pl_model, train_dataloader=dataloader_train, val_dataloaders=dataloader_val)
+            pl_model = SlotOccupancyClassifier.load_from_checkpoint(checkpoint_path=checkpoint_callback.best_model_path)
+            trainer.test(pl_model, dataloader_test)
+
+        elif config['task'] == 'test':
+            pl_model = SlotOccupancyClassifier.load_from_checkpoint(checkpoint_path=checkpoint_callback.best_model_path)
+            trainer.test(pl_model, dataloader_test)
+
+    elif config['mode'] == 'inference':
+        input_size = config['model']['input_size']
+
+        dataloader = CNRExtDataloader(targets_dir=config['dataset']['targets_dir'],
+                                      images_dir=config['dataset']['images_dir'],
+                                      targets_origin=config['targets_origin'],
+                                      weather=config['dataset']['params']['weather'],
+                                      camera_ids=config['dataset']['params']['camera_ids'],
+                                      label_image_size=config['dataset']['params']['label_image_size'],
+                                      image_size=config['dataset']['params']['image_size'],
+                                      batch_size=config['batch_size'], shuffle=False)
+        transform = transforms.Compose([
+            transforms.Resize((input_size, input_size)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=config['model']['normalize']['mean'], std=config['model']['normalize']['std'])
+        ])
+
+        pl_model = SlotOccupancyClassifier.load_from_checkpoint(checkpoint_path=config['model']['path'],
+                                                                model_repo=config['model']['repository'],
+                                                                model_name=config['model']['name'],
+                                                                pretrained=config['model']['pretrained'],
+                                                                learning_rate=config['model']['learning_rate'])
+        pl_model.eval()
+
+        result = []
+        for batch_image, batch_slot_positions in dataloader:
+            for image, slot_positions in zip(batch_image, batch_slot_positions):
+                slot_crops = utils.crop_and_append(image, slot_positions, transform)
+                result.append(pl_model(slot_crops)[1])
+
 
 
 if __name__ == '__main__':
