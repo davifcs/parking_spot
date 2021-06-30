@@ -58,10 +58,11 @@ def crop_and_append(image_path, slot_positions, transform):
     return torch.stack(slot_crops)
 
 
-def display_inference(image, results, slot_positions):
+def display_inference(image_path, results, slot_positions):
     output_path = os.path.abspath('.') + '/results/inference/' + \
-                  os.path.basename(os.path.split(image)[0]) + '/' + os.path.basename(image)
-    image = Image.open(image)
+                  os.path.basename(os.path.split(image_path)[0]) + '/'
+    os.makedirs(output_path, exist_ok=True)
+    image = Image.open(image_path)
     draw = ImageDraw.Draw(image)
     for sp, r in zip(slot_positions, results):
         if r:
@@ -69,5 +70,5 @@ def display_inference(image, results, slot_positions):
         else:
             outline = 'green'
         draw.rectangle(sp[:4], outline=outline, width=2)
-    image.save(output_path)
+    image.save(output_path + os.path.basename(image_path))
 
