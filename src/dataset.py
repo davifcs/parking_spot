@@ -9,7 +9,6 @@ from PIL import Image
 class CNRExtDataloader():
     def __init__(self,
                  targets_dir: str = '',
-                 targets_origin: str = '',
                  images_dir: str = '',
                  weather: list = [],
                  camera_ids: list = [],
@@ -30,7 +29,7 @@ class CNRExtDataloader():
         self.image_size = image_size
         self.label_image_size = label_image_size
 
-        self.__parse_bounding_boxes_csv(targets_origin)
+        self.__parse_bounding_boxes_csv(targets_dir)
         self.__load_images_path(images_dir, weather, camera_ids)
         self.__image_target_pair()
 
@@ -49,8 +48,8 @@ class CNRExtDataloader():
                 yield self.images_paths[batch].tolist(), self.targets[batch].tolist()
                 batch = []
 
-    def __parse_bounding_boxes_csv(self, targets_origin):
-        if targets_origin == "cnrext":
+    def __parse_bounding_boxes_csv(self, targets_dir):
+        if os.path.basename(targets_dir) == "CNR-EXT_FULL_IMAGE_1000x750":
             for f in self.targets_paths:
                 targets_df = pd.read_csv(f)
                 targets_df[['X', 'W']] = targets_df[['X', 'W']] * self.image_size[0] / self.label_image_size[0]
@@ -66,7 +65,7 @@ class CNRExtDataloader():
                 self.target_dict[int(os.path.splitext(f)[0][-1])] = \
                     targets_df[['X1', 'Y1', 'X2', 'Y2', 'camera']].values
 
-        elif targets_origin == "own":
+        else:
             for f in self.targets_paths:
                 targets_df = pd.read_csv(f)
                 self.target_dict[int(os.path.splitext(f)[0][-1])] = targets_df.values

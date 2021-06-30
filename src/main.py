@@ -1,3 +1,4 @@
+import os
 import argparse
 import json
 
@@ -25,15 +26,15 @@ arg_parser.add_argument(
 def main(config_path):
     with open(config_path) as config_buffer:
         config = json.loads(config_buffer.read())
+        mode = os.path.splitext(config_path)[0]
 
-    if config['mode'] == 'slot_position':
+    if mode == 'config_slot_position':
         config_camera_ids = config['dataset']['params']['camera_ids']
         config_slots = config['dataset']['params']['slots']
         gen_target_wh = config['dataset']['params']['gen_target_wh']
 
         dataloader = CNRExtDataloader(targets_dir=config['dataset']['targets_dir'],
                                 images_dir=config['dataset']['images_dir'],
-                                targets_origin=config['targets_origin'],
                                 weather=config['dataset']['params']['weather'],
                                 camera_ids=config['dataset']['params']['camera_ids'],
                                 label_image_size=config['dataset']['params']['label_image_size'],
@@ -48,6 +49,8 @@ def main(config_path):
         batch_results = []
         batch_camera_ids = []
         model.eval()
+        print('Slot position - Task: ' + config['task'])
+
         for images, targets in dataloader:
             images_paths = images[:]
             results = model(images)
@@ -87,9 +90,11 @@ def main(config_path):
                                                  clusters_xy[:, 0] + gen_target_wh[0],
                                                  clusters_xy[:, 1] + gen_target_wh[1],
                                                  [conf_c] * len(clusters_xy)]).T
-                pd.DataFrame(clusters_xyxy_camera).to_csv("./results/generate/camera" + str(conf_c) + ".csv",
+                output_path = './results/generate/'
+                os.makedirs(output_path, exist_ok=True)
+                pd.DataFrame(clusters_xyxy_camera).to_csv(output_path + "/camera" + str(conf_c) + ".csv",
                                                           index=False)
-    elif config['mode'] == 'slot_occupancy':
+    elif mode == 'config_slot_occupancy':
         input_size = config['model']['input_size']
         transform = transforms.Compose([
             transforms.Resize((input_size, input_size)),
@@ -135,12 +140,12 @@ def main(config_path):
             pl_model = SlotOccupancyClassifier.load_from_checkpoint(checkpoint_path=checkpoint_callback.best_model_path)
             trainer.test(pl_model, dataloader_test)
 
-    elif config['mode'] == 'inference':
+    elif mode == 'config_inference':
+        print('Running inference...')
         input_size = config['model']['input_size']
 
         dataloader = CNRExtDataloader(targets_dir=config['dataset']['targets_dir'],
                                       images_dir=config['dataset']['images_dir'],
-                                      targets_origin=config['targets_origin'],
                                       weather=config['dataset']['params']['weather'],
                                       camera_ids=config['dataset']['params']['camera_ids'],
                                       label_image_size=config['dataset']['params']['label_image_size'],
@@ -158,13 +163,14 @@ def main(config_path):
                                                                 pretrained=config['model']['pretrained'],
                                                                 learning_rate=config['model']['learning_rate'])
         pl_model.eval()
+        result_image = []
 
-        result = []
         for batch_image, batch_slot_positions in dataloader:
             for image, slot_positions in zip(batch_image, batch_slot_positions):
                 slot_crops = utils.crop_and_append(image, slot_positions, transform)
-                result.append(pl_model(slot_crops)[1])
-
+                result = pl_model(slot_crops)[1]
+                utils.display_inference(image, result, slot_positions)
+                result_image.append(result)
 
 
 if __name__ == '__main__':

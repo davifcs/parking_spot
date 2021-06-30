@@ -1,5 +1,4 @@
 {
-    "mode":         "slot_occupancy",
     "task":         "train",
     "num_workers":  8,
     "epochs":       3,
