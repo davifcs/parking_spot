@@ -104,7 +104,7 @@ def main(config_path):
         checkpoint_callback = ModelCheckpoint(
             monitor='val_loss',
             dirpath=config['train']['checkpoint_path'],
-            filename="{epoch:02d}-{val_loss:.2f}",
+            filename="{epoch:02d}-{val_loss:.2f}-{val_accuracy:.2f}",
             mode='min',
         )
         dataset_train = CNRExtPatchesDataset(images_dir=config['dataset']['images_dir'],
@@ -133,11 +133,14 @@ def main(config_path):
 
         if config['task'] == 'train':
             trainer.fit(model=pl_model, train_dataloader=dataloader_train, val_dataloaders=dataloader_val)
-            pl_model = SlotOccupancyClassifier.load_from_checkpoint(checkpoint_path=checkpoint_callback.best_model_path)
             trainer.test(pl_model, dataloader_test)
 
         elif config['task'] == 'test':
-            pl_model = SlotOccupancyClassifier.load_from_checkpoint(checkpoint_path=checkpoint_callback.best_model_path)
+            pl_model = SlotOccupancyClassifier.load_from_checkpoint(checkpoint_path=config['test']['model_path'],
+                                                                    model_repo=config['model']['repository'],
+                                                                    model_name=config['model']['name'],
+                                                                    pretrained=config['model']['pretrained'],
+                                                                    learning_rate=config['model']['learning_rate'])
             trainer.test(pl_model, dataloader_test)
 
     elif mode == 'config_inference':

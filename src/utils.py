@@ -32,7 +32,7 @@ def detections(detected, target):
 
 def display_targets_and_detections(image_path, detected, target, n_detections):
     for p, d, t, n in zip(image_path, detected, target, n_detections):
-        image = Image.open(p)
+        image = Image.open(p).convert('RGB')
         draw = ImageDraw.Draw(image)
         output_path = os.path.abspath('.') + '/results/evaluate/' + \
                       os.path.basename(os.path.split(p)[0]) + '/'
@@ -51,7 +51,7 @@ def display_targets_and_detections(image_path, detected, target, n_detections):
 
 def crop_and_append(image_path, slot_positions, transform):
     slot_crops = []
-    image = Image.open(image_path)
+    image = Image.open(image_path).convert('RGB')
     for xyxy in slot_positions:
         crop = image.crop((xyxy[0], xyxy[1], xyxy[2], xyxy[3]))
         slot_crops.append(transform(crop))
@@ -62,7 +62,7 @@ def display_inference(image_path, results, slot_positions):
     output_path = os.path.abspath('.') + '/results/inference/' + \
                   os.path.basename(os.path.split(image_path)[0]) + '/'
     os.makedirs(output_path, exist_ok=True)
-    image = Image.open(image_path)
+    image = Image.open(image_path).convert('RGB')
     draw = ImageDraw.Draw(image)
     for sp, r in zip(slot_positions, results):
         if r:

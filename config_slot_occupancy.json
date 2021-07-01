@@ -1,5 +1,5 @@
 {
-    "task":         "train",
+    "task":         "test",
     "num_workers":  8,
     "epochs":       3,
     "gpus":         1,
@@ -17,7 +17,8 @@
     },
 
     "test": {
-        "camera_ids":   [6, 7, 8 , 9]
+        "camera_ids":   [6, 7, 8 , 9],
+        "model_path":   "trained_models/epoch=01-val_loss=0.01-val_accuracy=1.00.ckpt"
     },
 
     "model": {

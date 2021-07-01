@@ -1,5 +1,5 @@
 {
-    "batch_size":       32,
+    "batch_size":   32,
 
     "dataset" : {
         "targets_dir":  "./results/generate",

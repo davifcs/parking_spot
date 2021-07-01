@@ -96,7 +96,8 @@ class CNRExtPatchesDataset(Dataset):
 
     def __getitem__(self, idx):
         label = self.labels[idx].astype(np.int64)
-        image = Image.open(self.images_path[idx])
+        image = Image.open(self.images_path[idx]).convert('RGB')
         image = self.transform(image)
+
 
         return image, label
