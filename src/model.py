@@ -1,5 +1,6 @@
 import torch
 from pytorch_lightning import LightningModule
+from sklearn.metrics import confusion_matrix, classification_report
 
 
 class SlotOccupancyClassifier(LightningModule):
@@ -53,12 +54,19 @@ class SlotOccupancyClassifier(LightningModule):
         batch_accuracy = (preds == y)
 
         return {'batch_losses': batch_losses, 'batch_accuracy': batch_accuracy,
-                'predictions': preds, 'label': y}
+                'predictions': preds, 'labels': y}
 
     def test_epoch_end(self, outputs):
         avg_loss = torch.stack([output['batch_losses'] for output in outputs]).mean()
         accuracy = torch.stack([output['batch_accuracy'] for output in outputs]).float().mean()
+        preds = torch.stack([output['predictions'] for output in outputs]).float()
+        labels = torch.stack([output['labels'] for output in outputs]).float()
 
+        report = classification_report(labels.cpu(), preds.cpu())
+        cm = confusion_matrix(labels.cpu(), preds.cpu())
+
+        print('\n', report)
+        print('Confusion Matrix \n', cm)
         self.log('test_loss', avg_loss.item())
         self.log('test_accuracy', accuracy.item())
 

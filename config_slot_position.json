@@ -1,14 +1,17 @@
 {
-    "task":             "evaluate",
+    "task":             "compare",
     "batch_size":       32,
 
     "dataset" : {
-        "targets_dir":  "./results/generate",
-        "images_dir":   "./data/CNR-EXT_FULL_IMAGE_1000x750/FULL_IMAGE_1000x750",
+        "targets_dir":              "./data/CNR-EXT_FULL_IMAGE_1000x750",
+        "images_dir":               "./data/CNR-EXT_FULL_IMAGE_1000x750/FULL_IMAGE_1000x750",
+        "generated_targets_dir":    "./results/generate",
+        "compare_targets_dir":      "./results/compare",
+        "evaluate_targets_dir":     "./results/evaluate",
         "params": {
             "camera_ids":           [1, 2, 3, 4, 5, 6, 7, 8, 9],
-            "slots":                [35, 15, 30, 42, 50, 45, 47, 54, 39],
-            "gen_target_wh":        [20, 20],
+            "slots":                [35, 15, 30, 42, 41, 50, 46, 46, 39],
+            "gen_target_wh":        [30, 30],
             "weather":              ["OVERCAST", "SUNNY", "RAINY"],
             "label_image_size":     [2592,1944],
             "image_size":           [1000,750]
@@ -17,7 +20,7 @@
 
     "model" : {
         "repository":   "ultralytics/yolov5",
-        "name":         "yolov5x",
+        "name":         "yolov5x6",
         "classes":      [2, 5, 7],
         "pretrained":   1
     }

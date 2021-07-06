@@ -6,6 +6,7 @@ import numpy as np
 from torch.utils.data import Dataset
 from PIL import Image
 
+
 class CNRExtDataloader():
     def __init__(self,
                  targets_dir: str = '',
@@ -29,9 +30,9 @@ class CNRExtDataloader():
         self.image_size = image_size
         self.label_image_size = label_image_size
 
-        self.__parse_bounding_boxes_csv(targets_dir)
-        self.__load_images_path(images_dir, weather, camera_ids)
-        self.__image_target_pair()
+        self.parse_bounding_boxes_csv(targets_dir)
+        self.load_images_path(images_dir, weather, camera_ids)
+        self.image_target_pair()
 
     def __len__(self) -> int:
         return int(len(self.images_paths) / self.batch_size)
@@ -48,7 +49,7 @@ class CNRExtDataloader():
                 yield self.images_paths[batch].tolist(), self.targets[batch].tolist()
                 batch = []
 
-    def __parse_bounding_boxes_csv(self, targets_dir):
+    def parse_bounding_boxes_csv(self, targets_dir):
         if os.path.basename(targets_dir) == "CNR-EXT_FULL_IMAGE_1000x750":
             for f in self.targets_paths:
                 targets_df = pd.read_csv(f)
@@ -70,13 +71,13 @@ class CNRExtDataloader():
                 targets_df = pd.read_csv(f)
                 self.target_dict[int(os.path.splitext(f)[0][-1])] = targets_df.values
 
-    def __load_images_path(self, images_dir, weather, camera_ids):
+    def load_images_path(self, images_dir, weather, camera_ids):
         for w in weather:
             for i in camera_ids:
                 self.images_paths.extend(glob.glob(images_dir + "/" + w + '**/*/*{}/*jpg'.format(i), recursive=True))
         self.images_paths = np.array(self.images_paths)
 
-    def __image_target_pair(self):
+    def image_target_pair(self):
         for path in self.images_paths:
             self.targets.append(self.target_dict[int(os.path.basename(os.path.dirname(path))[-1:])])
         self.targets = np.array(self.targets)
@@ -99,5 +100,5 @@ class CNRExtPatchesDataset(Dataset):
         image = Image.open(self.images_path[idx]).convert('RGB')
         image = self.transform(image)
 
-
         return image, label
+

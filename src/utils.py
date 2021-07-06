@@ -20,8 +20,11 @@ def detections(detected, target):
         if len(d) > 0:
             d_xy = []
             center = (d[:, :2] + d[:, 2:4])//2
-            d_xy.extend(center.cpu().tolist())
-            d_xy = np.array(d_xy)
+            if isinstance(center, torch.Tensor):
+                d_xy.extend(center.cpu().tolist())
+                d_xy = np.array(d_xy)
+            else:
+                d_xy = center
             n_detections.append(sum(((d_xy >= t_xyxy[:, None, :2]) & (d_xy <= t_xyxy[:, None, 2:])).all(2).any(1)))
             n_targets.append(len(t_xyxy))
         else:
